@@ -20,7 +20,7 @@ pub mod utils {
     use std::path::Path;
     use tera::Context;
 
-    fn save_file(name: String, content: String) {
+    pub fn save_file(name: String, content: String) {
         let path = Path::new(&name);
         let mut file = match File::create(&path) {
             Err(why) => panic!("Error in creating file {}", why.description()),
