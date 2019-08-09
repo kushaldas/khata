@@ -1,3 +1,8 @@
+//! # Khata
+//!
+//! This is the internal library for the static blogging tool.
+//!
+//!
 #[macro_use]
 extern crate tera;
 
