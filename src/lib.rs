@@ -95,15 +95,22 @@ pub mod libkhata {
     use crate::utils::*;
     extern crate chrono;
 
+    extern crate serde;
+    extern crate serde_json;
+
     use chrono::prelude::*;
+    use serde::Deserialize;
+    use serde_json::Result;
     use std::collections::HashMap;
 
-    struct PageLink {
+    #[derive(Deserialize, Debug)]
+    pub struct PageLink {
         link: String,
         text: String,
     }
 
-    struct Configuration {
+    #[derive(Deserialize, Debug)]
+    pub struct Configuration {
         author: String,
         title: String,
         url: String,
@@ -116,7 +123,7 @@ pub mod libkhata {
         withamp: bool,
     }
 
-    struct Post {
+    pub struct Post {
         title: String,
         slug: String,
         body: String,
@@ -136,7 +143,7 @@ pub mod libkhata {
         conf: Configuration,
     }
 
-    pub fn read_post(filename: String) {
+    pub fn read_post(filename: String, conf: &Configuration) {
         let content = read_file(filename);
         let tmp_content = content.clone();
         let lines: Vec<&str> = tmp_content.split("\n").collect();
@@ -161,7 +168,7 @@ pub mod libkhata {
                 dt = d.with_timezone(&dt.timezone());
             } else if line.starts_with(".. author:") {
                 author = String::from(&line[11..])
-            }else if line.starts_with(".. tags:") {
+            } else if line.starts_with(".. tags:") {
                 let l = &line[9..];
                 let trimmed_line = l.trim();
                 tagline = String::from(trimmed_line);
@@ -174,6 +181,12 @@ pub mod libkhata {
         println!("{}", date);
         println!("{}", author);
         println!("{}", tagline);
+    }
+
+    pub fn get_conf() -> Configuration {
+        let json_str = read_file("conf.json".to_string());
+        let conf: Configuration = serde_json::from_str(&json_str).unwrap();
+        conf
     }
 
 }
