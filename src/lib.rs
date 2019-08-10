@@ -92,6 +92,7 @@ pub mod utils {
 }
 
 pub mod libkhata {
+    extern crate pulldown_cmark;
     use crate::utils::*;
     extern crate chrono;
 
@@ -99,6 +100,7 @@ pub mod libkhata {
     extern crate serde_json;
 
     use chrono::prelude::*;
+    use pulldown_cmark::{html, Options, Parser};
     use serde::Deserialize;
     use serde_json::Result;
     use std::collections::HashMap;
@@ -191,10 +193,18 @@ pub mod libkhata {
             finaltags.insert(create_slug(temp_word.clone()), temp_word);
         }
         //let mut tags: Vec<String> = tags_temp.iter().map(|x| x.to_string()).collect();
+        let mut options = Options::empty();
+        options.insert(Options::ENABLE_STRIKETHROUGH);
+        options.insert(Options::ENABLE_TASKLISTS);
+        let parser = Parser::new_ext(&content, options);
+
+        // Write to String buffer.
+        let mut html_output = String::new();
+        html::push_html(&mut html_output, parser);
         let post = Post {
             title: title,
             slug: slug.clone(),
-            body: content,
+            body: html_output,
             date: dt,
             sdate: date,
             tags: finaltags,
