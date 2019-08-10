@@ -3,6 +3,7 @@ extern crate clap;
 extern crate khata;
 
 use clap::{crate_authors, crate_version, App, Arg};
+use khata::libkhata::{get_conf, read_post};
 use khata::utils::*;
 
 fn main() {
@@ -22,4 +23,7 @@ fn main() {
         create_new_post();
         return;
     }
+    let conf = get_conf();
+    let p = read_post("posts/setting-up-wkd.md".to_string(), &conf);
+    println!("{:?}", p);
 }

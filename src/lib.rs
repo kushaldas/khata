@@ -109,7 +109,7 @@ pub mod libkhata {
         text: String,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Debug, Default)]
     pub struct Configuration {
         author: String,
         title: String,
@@ -123,35 +123,33 @@ pub mod libkhata {
         withamp: bool,
     }
 
-    pub struct Post {
+    #[derive(Debug)]
+    pub struct Post<'a> {
         title: String,
         slug: String,
+        author: String,
         body: String,
-        ampbody: String,
+        //ampbody: String,
         date: DateTime<Local>,
         sdate: String,
         tags: HashMap<String, String>,
         changed: bool,
         url: String,
-        ampurl: String,
-        //Durl :   template.JSstr
-        logo: String,
-        links: Vec<PageLink>,
-        disqus: String,
-        //edata  : ExtraData
-        author: String,
-        conf: Configuration,
+        conf: &'a Configuration,
     }
 
-    pub fn read_post(filename: String, conf: &Configuration) {
+    pub fn read_post(filename: String, conf: &Configuration) -> Post {
         let content = read_file(filename);
         let tmp_content = content.clone();
         let lines: Vec<&str> = tmp_content.split("\n").collect();
 
         let mut title: String = String::from("");
         let mut author: String = String::from("");
+        let mut temp_author: String = String::from("");
         let mut date: String = String::from("");
         let mut tagline: String = String::from("");
+        let mut slug: String = String::from("");
+        let mut finaltags: HashMap<String, String> = HashMap::new();
         let mut dt: DateTime<Local> = Local::now();
 
         for line in lines {
@@ -167,7 +165,9 @@ pub mod libkhata {
                 let d = DateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%S%:z").unwrap();
                 dt = d.with_timezone(&dt.timezone());
             } else if line.starts_with(".. author:") {
-                author = String::from(&line[11..])
+                temp_author = String::from(&line[11..])
+            } else if line.starts_with(".. slug:") {
+                slug = String::from(&line[9..])
             } else if line.starts_with(".. tags:") {
                 let l = &line[9..];
                 let trimmed_line = l.trim();
@@ -177,10 +177,33 @@ pub mod libkhata {
                 }
             }
         }
-        println!("{}", title);
-        println!("{}", date);
-        println!("{}", author);
-        println!("{}", tagline);
+        // Find the actual author for the post
+        // This can be per post or from the configuration file
+        if temp_author == String::from("") {
+            author = conf.author.clone();
+        }
+
+        let tags_temp: Vec<&str> = tagline.split(",").collect();
+        for word in tags_temp {
+            let trimmped_word = word.trim();
+            let temp_word = trimmped_word.to_string();
+
+            finaltags.insert(create_slug(temp_word.clone()), temp_word);
+        }
+        //let mut tags: Vec<String> = tags_temp.iter().map(|x| x.to_string()).collect();
+        let post = Post {
+            title: title,
+            slug: slug.clone(),
+            body: content,
+            date: dt,
+            sdate: date,
+            tags: finaltags,
+            changed: false,
+            author: author,
+            url: format!("{}posts/{}.html", conf.url.clone(), slug),
+            conf: conf,
+        };
+        post
     }
 
     pub fn get_conf() -> Configuration {
