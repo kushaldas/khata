@@ -196,6 +196,7 @@ pub mod libkhata {
         let mut options = Options::empty();
         options.insert(Options::ENABLE_STRIKETHROUGH);
         options.insert(Options::ENABLE_TASKLISTS);
+        options.insert(Options::ENABLE_TABLES);
         let parser = Parser::new_ext(&content, options);
 
         // Write to String buffer.
