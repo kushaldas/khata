@@ -34,6 +34,17 @@ pub mod utils {
         };
     }
 
+    pub fn read_file(name: String) -> String {
+        let path = Path::new(&name);
+        let mut file = match File::open(&path) {
+            Err(why) => panic!("Error in opening file {}", why.description()),
+            Ok(file) => file,
+        };
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        contents
+    }
+
     pub fn get_input() -> String {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -78,4 +89,91 @@ pub mod utils {
         let filename = format!("./posts/{}.md", slug);
         save_file(filename, content);
     }
+}
+
+pub mod libkhata {
+    use crate::utils::*;
+    extern crate chrono;
+
+    use chrono::prelude::*;
+    use std::collections::HashMap;
+
+    struct PageLink {
+        link: String,
+        text: String,
+    }
+
+    struct Configuration {
+        author: String,
+        title: String,
+        url: String,
+        content_footer: String,
+        disqus: String,
+        email: String,
+        description: String,
+        logo: String,
+        links: Vec<PageLink>,
+        withamp: bool,
+    }
+
+    struct Post {
+        title: String,
+        slug: String,
+        body: String,
+        ampbody: String,
+        date: DateTime<Local>,
+        sdate: String,
+        tags: HashMap<String, String>,
+        changed: bool,
+        url: String,
+        ampurl: String,
+        //Durl :   template.JSstr
+        logo: String,
+        links: Vec<PageLink>,
+        disqus: String,
+        //edata  : ExtraData
+        author: String,
+        conf: Configuration,
+    }
+
+    pub fn read_post(filename: String) {
+        let content = read_file(filename);
+        let tmp_content = content.clone();
+        let lines: Vec<&str> = tmp_content.split("\n").collect();
+
+        let mut title: String = String::from("");
+        let mut author: String = String::from("");
+        let mut date: String = String::from("");
+        let mut tagline: String = String::from("");
+        let mut dt: DateTime<Local> = Local::now();
+
+        for line in lines {
+            // Means we have all the metadata
+            if line.starts_with("-->") {
+                break;
+            } else if line.starts_with(".. title:") {
+                // We have the title of the post
+                title = String::from(&line[10..]);
+            } else if line.starts_with(".. date:") {
+                // We have the date of the post
+                date = String::from(&line[9..]);
+                let d = DateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%S%:z").unwrap();
+                dt = d.with_timezone(&dt.timezone());
+            } else if line.starts_with(".. author:") {
+                author = String::from(&line[11..])
+            }else if line.starts_with(".. tags:") {
+                let l = &line[9..];
+                let trimmed_line = l.trim();
+                tagline = String::from(trimmed_line);
+                if tagline == "" {
+                    tagline = "Uncategorized".to_string();
+                }
+            }
+        }
+        println!("{}", title);
+        println!("{}", date);
+        println!("{}", author);
+        println!("{}", tagline);
+    }
+
 }
