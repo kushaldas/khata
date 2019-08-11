@@ -94,15 +94,16 @@ pub mod utils {
 pub mod libkhata {
     extern crate pulldown_cmark;
     use crate::utils::*;
+    extern crate base64;
     extern crate chrono;
 
     extern crate serde;
     extern crate serde_json;
 
+    use base64::encode;
     use chrono::prelude::*;
     use pulldown_cmark::{html, Options, Parser};
     use serde::Deserialize;
-    use serde_json::Result;
     use std::collections::HashMap;
 
     #[derive(Deserialize, Debug)]
@@ -131,7 +132,7 @@ pub mod libkhata {
         slug: String,
         author: String,
         body: String,
-        //ampbody: String,
+        hash: String,
         date: DateTime<Local>,
         sdate: String,
         tags: HashMap<String, String>,
@@ -206,6 +207,7 @@ pub mod libkhata {
             title: title,
             slug: slug.clone(),
             body: html_output,
+            hash: encode(content.as_bytes()),
             date: dt,
             sdate: date,
             tags: finaltags,
