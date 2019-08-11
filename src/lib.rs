@@ -14,6 +14,8 @@ pub mod utils {
     use chrono::prelude::*;
     use regex::Regex;
     use std::error::Error;
+    use std::fs;
+    use std::fs::DirEntry;
     use std::fs::File;
     use std::io;
     use std::io::prelude::*;
@@ -89,22 +91,37 @@ pub mod utils {
         let filename = format!("./posts/{}.md", slug);
         save_file(filename, content);
     }
+    pub fn ls(dirname: String) -> Vec<String> {
+        let mut names: Vec<String> = vec![];
+        for entry in fs::read_dir(dirname).unwrap() {
+            let value = entry.unwrap();
+            let finalpath = value.path();
+            let finalname = finalpath.to_str();
+            match finalname {
+                Some(name) => names.push(name.to_string()),
+                None => (),
+            }
+        }
+        names
+    }
 }
 
 pub mod libkhata {
     extern crate pulldown_cmark;
     use crate::utils::*;
-    extern crate base64;
     extern crate chrono;
+    extern crate hex;
+    extern crate sha2;
 
     extern crate serde;
     extern crate serde_json;
 
-    use base64::encode;
     use chrono::prelude::*;
     use pulldown_cmark::{html, Options, Parser};
     use serde::Deserialize;
+    use sha2::{Digest, Sha256};
     use std::collections::HashMap;
+    use std::str;
 
     #[derive(Deserialize, Debug)]
     pub struct PageLink {
@@ -126,7 +143,7 @@ pub mod libkhata {
         withamp: bool,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Post<'a> {
         title: String,
         slug: String,
@@ -203,11 +220,18 @@ pub mod libkhata {
         // Write to String buffer.
         let mut html_output = String::new();
         html::push_html(&mut html_output, parser);
+
+        // Let the current sha256sum of the source file
+        let mut hasher = Sha256::new();
+        hasher.input(content.as_bytes());
+        let result = hasher.result();
+        let hashs = hex::encode(&result[..]);
+
         let post = Post {
             title: title,
             slug: slug.clone(),
             body: html_output,
-            hash: encode(content.as_bytes()),
+            hash: hashs,
             date: dt,
             sdate: date,
             tags: finaltags,
@@ -223,6 +247,47 @@ pub mod libkhata {
         let json_str = read_file("conf.json".to_string());
         let conf: Configuration = serde_json::from_str(&json_str).unwrap();
         conf
+    }
+
+    pub fn rebuild() {
+        let mut indexlist: Vec<Post> = vec![];
+        let mut ps: Vec<Post> = vec![];
+        let mut pageyears: HashMap<String, Vec<Post>> = HashMap::new();
+        let mut catslinks: HashMap<String, Vec<Post>> = HashMap::new();
+        let mut catnames: HashMap<String, String> = HashMap::new();
+
+        let conf = get_conf();
+        let post_files = ls("./posts/".to_string());
+
+        for filename in post_files {
+            let post = read_post(filename, &conf);
+            let postdate = post.date.year().to_string();
+            let page_posts = pageyears.get_mut(&postdate);
+            match page_posts {
+                Some(v) => v.push(post.clone()),
+                None => {
+                    let temp = vec![post.clone()];
+                    pageyears.insert(postdate, temp);
+                }
+            }
+            // Now make it ready for tags (categories)
+            let tp = post.clone();
+            for (k, v) in &tp.tags {
+                catnames.insert(k.clone(), v.clone());
+                let key = k.clone();
+                let cat_posts = catslinks.get_mut(&key);
+                match cat_posts {
+                    Some(v) => v.push(post.clone()),
+                    None => {
+                        let temp = vec![post.clone()];
+                        catslinks.insert(key, temp);
+                    }
+                }
+            }
+            ps.push(post);
+        }
+
+        println!("{:?}", catslinks)
     }
 
 }
