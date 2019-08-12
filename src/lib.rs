@@ -119,18 +119,19 @@ pub mod libkhata {
 
     use chrono::prelude::*;
     use pulldown_cmark::{html, Options, Parser};
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
     use sha2::{Digest, Sha256};
     use std::collections::HashMap;
     use std::str;
+    use tera::{Tera, Context};
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Deserialize, Serialize, Debug)]
     pub struct PageLink {
         link: String,
         text: String,
     }
 
-    #[derive(Deserialize, Debug, Default)]
+    #[derive(Deserialize, Serialize, Debug, Default)]
     pub struct Configuration {
         author: String,
         title: String,
@@ -156,6 +157,12 @@ pub mod libkhata {
         tags: HashMap<String, String>,
         changed: bool,
         url: String,
+        conf: &'a Configuration,
+    }
+
+    #[derive(Debug, Clone, Serialize)]
+    pub struct Catpage<'a> {
+        cats: HashMap<String, String>,
         conf: &'a Configuration,
     }
 
@@ -250,6 +257,13 @@ pub mod libkhata {
         conf
     }
 
+    fn build_categories(tera: Tera, catpage: Catpage) {
+                let mut context = Context::new();
+        context.insert("catpage", &catpage);
+        let result = tera.render("category-index.html", &context).unwrap();
+        println!("{}", result);
+    }
+
     pub fn rebuild() {
         let mut indexlist: Vec<Post> = vec![];
         let mut ps: Vec<Post> = vec![];
@@ -288,7 +302,14 @@ pub mod libkhata {
             ps.push(post);
         }
 
-        println!("{:?}", catslinks)
+        let catpage = Catpage {
+            cats: catnames.clone(),
+            conf: &conf,
+        };
+        //println!("{:?}", catpage);
+        let tera = compile_templates!("templates/**/*");
+
+        build_categories(tera, catpage);
     }
 
 }
