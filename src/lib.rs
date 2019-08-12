@@ -280,6 +280,8 @@ pub mod libkhata {
     }
 
     fn build_post(tera: &Tera, post: &Post, ptype: String) {
+        let mut filename = "".to_string();
+        let mut result: String = "".to_string();
         let mut context = Context::new();
         // This struct can be passed to the template.
         let sp = SerialPost {
@@ -296,10 +298,13 @@ pub mod libkhata {
         };
         context.insert("pdata", &sp);
         if ptype == "post" {
-            let result = tera.render("post.html", &context).unwrap();
-            let filename = format!("./output/posts/{}.html", post.slug);
-            save_file(filename, result);
+            result = tera.render("post.html", &context).unwrap();
+            filename = format!("./output/posts/{}.html", post.slug);
+        } else if ptype == "page" {
+            result = tera.render("page.html", &context).unwrap();
+            filename = format!("./output/pages/{}.html", post.slug);
         }
+        save_file(filename, result);
     }
 
     pub fn rebuild(rebuildall: bool) {
