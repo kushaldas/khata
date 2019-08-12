@@ -68,7 +68,8 @@ pub mod utils {
             output.push_str(data);
             output.push_str("-");
         }
-        return output.trim_end_matches("-").to_string();
+        let yet_to_be_small = output.trim_end_matches("-");
+        return yet_to_be_small.to_lowercase();
     }
 
     pub fn create_new_post() {
