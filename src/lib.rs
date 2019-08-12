@@ -123,7 +123,7 @@ pub mod libkhata {
     use sha2::{Digest, Sha256};
     use std::collections::HashMap;
     use std::str;
-    use tera::{Tera, Context};
+    use tera::{Context, Tera};
 
     #[derive(Deserialize, Serialize, Debug)]
     pub struct PageLink {
@@ -153,6 +153,21 @@ pub mod libkhata {
         body: String,
         hash: String,
         date: DateTime<Local>,
+        sdate: String,
+        tags: HashMap<String, String>,
+        changed: bool,
+        url: String,
+        conf: &'a Configuration,
+    }
+
+    // This structure is only for template rendering
+    #[derive(Debug, Clone, Serialize)]
+    pub struct SerialPost<'a> {
+        title: String,
+        slug: String,
+        author: String,
+        body: String,
+        hash: String,
         sdate: String,
         tags: HashMap<String, String>,
         changed: bool,
@@ -258,13 +273,36 @@ pub mod libkhata {
     }
 
     fn build_categories(tera: Tera, catpage: Catpage) {
-                let mut context = Context::new();
+        let mut context = Context::new();
         context.insert("catpage", &catpage);
         let result = tera.render("category-index.html", &context).unwrap();
         println!("{}", result);
     }
 
-    pub fn rebuild() {
+    fn build_post(tera: &Tera, post: &Post, ptype: String) {
+        let mut context = Context::new();
+        // This struct can be passed to the template.
+        let sp = SerialPost {
+            title: post.title.clone(),
+            slug: post.slug.clone(),
+            body: post.body.clone(),
+            hash: post.hash.clone(),
+            sdate: post.sdate.clone(),
+            tags: post.tags.clone(),
+            changed: false,
+            author: post.author.clone(),
+            url: post.url.clone(),
+            conf: post.conf,
+        };
+        context.insert("pdata", &sp);
+        if ptype == "post" {
+            let result = tera.render("post.html", &context).unwrap();
+            let filename = format!("./output/posts/{}.html", post.slug);
+            save_file(filename, result);
+        }
+    }
+
+    pub fn rebuild(rebuildall: bool) {
         let mut indexlist: Vec<Post> = vec![];
         let mut ps: Vec<Post> = vec![];
         let mut pageyears: HashMap<String, Vec<Post>> = HashMap::new();
@@ -273,9 +311,10 @@ pub mod libkhata {
 
         let conf = get_conf();
         let post_files = ls("./posts/".to_string());
+        let tera = compile_templates!("templates/**/*");
 
         for filename in post_files {
-            let post = read_post(filename, &conf);
+            let post = read_post(filename.clone(), &conf);
             let postdate = post.date.year().to_string();
             let page_posts = pageyears.get_mut(&postdate);
             match page_posts {
@@ -299,6 +338,11 @@ pub mod libkhata {
                     }
                 }
             }
+            // TODO: check for hashes here.
+            if rebuildall == true {
+                println!("Building post: {}", filename);
+                build_post(&tera, &post, "post".to_string());
+            }
             ps.push(post);
         }
 
@@ -307,7 +351,6 @@ pub mod libkhata {
             conf: &conf,
         };
         //println!("{:?}", catpage);
-        let tera = compile_templates!("templates/**/*");
 
         build_categories(tera, catpage);
     }
