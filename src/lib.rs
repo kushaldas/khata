@@ -121,7 +121,9 @@ pub mod libkhata {
     use pulldown_cmark::{html, Options, Parser};
     use serde::{Deserialize, Serialize};
     use sha2::{Digest, Sha256};
+    use std::cmp::Reverse;
     use std::collections::HashMap;
+    use std::path::Path;
     use std::str;
     use tera::{Context, Tera};
 
@@ -173,6 +175,23 @@ pub mod libkhata {
         changed: bool,
         url: String,
         conf: &'a Configuration,
+    }
+
+    impl SerialPost<'_> {
+        pub fn new<'a>(post: &Post<'a>) -> SerialPost<'a> {
+            SerialPost {
+                title: post.title.clone(),
+                slug: post.slug.clone(),
+                body: post.body.clone(),
+                hash: post.hash.clone(),
+                sdate: post.sdate.clone(),
+                tags: post.tags.clone(),
+                changed: post.changed.clone(),
+                author: post.author.clone(),
+                url: post.url.clone(),
+                conf: post.conf,
+            }
+        }
     }
 
     #[derive(Debug, Clone, Serialize)]
@@ -272,11 +291,155 @@ pub mod libkhata {
         conf
     }
 
-    fn build_categories(tera: Tera, catpage: Catpage) {
+    fn build_categories(tera: &Tera, catpage: Catpage) {
         let mut context = Context::new();
         context.insert("catpage", &catpage);
         let result = tera.render("category-index.html", &context).unwrap();
-        println!("{}", result);
+        // TODO: Now save the file in the right place.
+    }
+
+    // Check if the indexfile exists on disk or not
+    fn check_index(indexname: String, index: u32) -> bool {
+        let mut name: String = "".to_string();
+        if indexname == "index".to_string() {
+            name = format!("./output/{}-{}.html", indexname, index);
+        } else {
+            name = format!("./output/categories/{}-{}.html", indexname, index);
+        }
+        let path = Path::new(&name);
+        path.exists()
+    }
+
+    // Creates index files a type of indexname.
+    // `index` is a valid indexname.
+    fn create_index_files(tera: &Tera, mut lps: Vec<Post>, indexname: &str) {
+        let POSTN = 10;
+        let mut prev = 0;
+        let mut next: i32 = 0;
+        let mut index = 1;
+        let mut index_page_flag = false;
+        let mut num = 0;
+        // length of the full list
+        let length = (lps.len() as u32).into();
+        // We start from the oldest post
+        // That is why we are sorting here.
+        lps.sort_by_key(|v| v.date);
+        let mut sort_index: Vec<Post> = Vec::new();
+
+        for post in lps {
+            if post.changed == true {
+                index_page_flag = true;
+            }
+            sort_index.push(post.clone());
+            num = num + 1;
+
+            // For each 10 posts, we create a new index page
+            if num == POSTN {
+                if check_index(String::from(indexname), index) == false {
+                    index_page_flag = true;
+                }
+
+                // Only changed indexes will get rebuild
+                if index_page_flag == true {
+                    index_page_flag = false;
+                    sort_index.sort_by_key(|v| Reverse(v.date));
+                    let lps: Vec<SerialPost> =
+                        sort_index.iter().map(|p| SerialPost::new(p)).collect();
+                    if index == 1 {
+                        prev = 0;
+                    } else {
+                        prev = index - 1;
+                    }
+
+                    // I don't remmeber the logic here.
+                    // TODO: Add some comment to explain the logic please.
+                    if (index * POSTN) < length && (length - index * POSTN) > POSTN {
+                        next = ((index + 1) as i32).into();
+                    } else if (index * POSTN) == length {
+                        next = -1;
+                    } else {
+                        next = 0;
+                    }
+                    // TODO: call build_index
+                    let lps: Vec<SerialPost> =
+                        sort_index.iter().map(|p| SerialPost::new(p)).collect();
+                    build_index(tera, lps, index, prev, next, indexname, sort_index[0].conf);
+                }
+
+                sort_index = Vec::new();
+                index = index + 1;
+                num = 0;
+            }
+        }
+        if sort_index.len() > 0 {
+            sort_index.sort_by_key(|v| Reverse(v.date));
+            let lps: Vec<SerialPost> = sort_index.iter().map(|p| SerialPost::new(p)).collect();
+            build_index(tera, lps, 0, index - 1, -1, indexname, sort_index[0].conf);
+        }
+    }
+
+    fn build_index(
+        tera: &Tera,
+        pss: Vec<SerialPost>,
+        index: u32,
+        pre: u32,
+        next: i32,
+        indexname: &str,
+        conf: &Configuration,
+    ) {
+        let mut result: String = "".to_string();
+        let mut filename: String = "".to_string();
+        let mut context = Context::new();
+        context.insert("posts", &pss);
+        context.insert("slug", indexname);
+        context.insert("conf", conf);
+        if pre != 0 {
+            context.insert("PreviousF", &true);
+            context.insert("Previous", &pre)
+        } else {
+            context.insert("PreviousF", &false);
+        }
+
+        if next > 0 {
+            context.insert("NextF", &true);
+            context.insert("Next", &next);
+        } else if next == -1 {
+            context.insert("NextF", &false);
+        } else {
+            context.insert("NextF", &true);
+            context.insert("Next", &next);
+        }
+        if next == 0 {
+            context.insert("NextLast", &true);
+        } else {
+            context.insert("NextLast", &false);
+        }
+        if indexname == "index" {
+            context.insert("Main", &true);
+        } else {
+            context.insert("Main", &false);
+        }
+
+        if indexname == "index" {
+            result = tera.render("index.html", &context).unwrap();
+        } else {
+            result = tera.render("cat-index.html", &context).unwrap();
+        }
+
+        if next == -1 {
+            if indexname == "index" {
+                filename = format!("./output/{}.html", indexname);
+            } else {
+                filename = format!("./output/categories/{}.html", indexname);
+            }
+        } else {
+            if indexname == "index" {
+                filename = format!("./output/{}-{}.html", indexname, index);
+            } else {
+                filename = format!("./output/categories/{}-{}.html", indexname, index);
+            }
+        }
+        save_file(filename, result);
     }
 
     fn build_post(tera: &Tera, post: &Post, ptype: String) {
@@ -308,18 +471,20 @@ pub mod libkhata {
     }
 
     pub fn rebuild(rebuildall: bool) {
+        let mut rebuild_index = false;
         let mut indexlist: Vec<Post> = vec![];
         let mut ps: Vec<Post> = vec![];
         let mut pageyears: HashMap<String, Vec<Post>> = HashMap::new();
         let mut catslinks: HashMap<String, Vec<Post>> = HashMap::new();
         let mut catnames: HashMap<String, String> = HashMap::new();
+        let mut cat_needs_build: HashMap<String, bool> = HashMap::new();
 
         let conf = get_conf();
         let post_files = ls("./posts/".to_string());
         let tera = compile_templates!("templates/**/*");
 
         for filename in post_files {
-            let post = read_post(filename.clone(), &conf);
+            let mut post = read_post(filename.clone(), &conf);
             let postdate = post.date.year().to_string();
             let page_posts = pageyears.get_mut(&postdate);
             match page_posts {
@@ -329,6 +494,19 @@ pub mod libkhata {
                     pageyears.insert(postdate, temp);
                 }
             }
+
+            // TODO: check for hashes here.
+            if rebuildall == true {
+                println!("Building post: {}", filename);
+                build_post(&tera, &post, "post".to_string());
+                rebuild_index = true;
+                post.changed = true;
+
+                // The following tags need rebuild
+                for (key, _value) in &post.tags {
+                    cat_needs_build.insert(String::from(key), true);
+                }
+            }
             // Now make it ready for tags (categories)
             let tp = post.clone();
             for (k, v) in &tp.tags {
@@ -336,18 +514,14 @@ pub mod libkhata {
                 let key = k.clone();
                 let cat_posts = catslinks.get_mut(&key);
                 match cat_posts {
-                    Some(v) => v.push(post.clone()),
+                    Some(v) => v.push(tp.clone()),
                     None => {
-                        let temp = vec![post.clone()];
+                        let temp = vec![tp.clone()];
                         catslinks.insert(key, temp);
                     }
                 }
             }
-            // TODO: check for hashes here.
-            if rebuildall == true {
-                println!("Building post: {}", filename);
-                build_post(&tera, &post, "post".to_string());
-            }
+
             ps.push(post);
         }
 
@@ -357,7 +531,27 @@ pub mod libkhata {
         };
         //println!("{:?}", catpage);
 
-        build_categories(tera, catpage);
+        build_categories(&tera, catpage);
+
+        // Now rebuild the category pages as required
+        for (key, _) in &cat_needs_build {
+            let mut final_lps: Vec<Post> = Vec::new();
+            let localposts = catslinks.get(key).unwrap();
+            let mut lps = localposts.clone();
+            lps.sort_by_key(|v| Reverse(v.date));
+            // let lps_template: Vec<SerialPost> = lps.iter().map(|p| SerialPost::new(p)).collect();
+            // Let us create template for the category `key`.
+            create_index_files(&tera, lps.clone(), key);
+
+            if lps.len() > 10 {
+                final_lps = lps[..11].to_vec();
+            } else {
+                final_lps = lps;
+            }
+            // TODO: Now do a build_feed() here with final_lps
+        }
+
+        create_index_files(&tera, ps.clone(), "index");
     }
 
 }
