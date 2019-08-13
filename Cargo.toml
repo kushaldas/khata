@@ -17,6 +17,7 @@ serde = { version = "1.0", features = ["derive"] }
 pulldown-cmark = "0.5.3"
 sha2 = "0.8.0"
 hex = "0.3.2"
+rss = "1.8.0"
 
 [dependencies.chrono]
 version = "0.4"

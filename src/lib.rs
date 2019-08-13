@@ -36,6 +36,30 @@ pub mod utils {
         };
     }
 
+    pub fn save_rss(name: String, content: String) {
+        let path = Path::new(&name);
+        let mut file = match File::create(&path) {
+            Err(why) => panic!("Error in creating file {}", why.description()),
+            Ok(file) => file,
+        };
+
+        match file.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>"#) {
+            Err(_) => (),
+            Ok(_) => (),
+        };
+
+        // Write the `LOREM_IPSUM` string to `file`, returns `io::Result<()>`
+        match file.write_all(content.as_bytes()) {
+            Err(why) => panic!("Failed to write to file: {}", why),
+            Ok(_) => (),
+        };
+
+        match file.write_all(b"\n") {
+            Err(_) => (),
+            Ok(_) => (),
+        };
+    }
+
     pub fn read_file(name: String) -> String {
         let path = Path::new(&name);
         let mut file = match File::open(&path) {
@@ -112,6 +136,7 @@ pub mod libkhata {
     use crate::utils::*;
     extern crate chrono;
     extern crate hex;
+    extern crate rss;
     extern crate sha2;
 
     extern crate serde;
@@ -543,15 +568,80 @@ pub mod libkhata {
             // Let us create template for the category `key`.
             create_index_files(&tera, lps.clone(), key);
 
-            if lps.len() > 10 {
-                final_lps = lps[..11].to_vec();
+            if lps.len() >= 10 {
+                final_lps = lps[..10].to_vec();
             } else {
                 final_lps = lps;
             }
-            // TODO: Now do a build_feed() here with final_lps
+            // Now build the feed for that tag
+            build_feeds(final_lps, &key, &conf);
         }
 
         create_index_files(&tera, ps.clone(), "index");
+        if rebuild_index == true {
+            // Time to check for any change in 10 posts at max and rebuild rss feed if required.
+
+            let mut lps = ps.clone();
+            lps.sort_by_key(|v| Reverse(v.date));
+            let mut final_lps: Vec<Post> = Vec::new();
+            if lps.len() >= 10 {
+                final_lps = lps[..10].to_vec();
+            } else {
+                final_lps = lps;
+            }
+            build_feeds(final_lps, "cmain", &conf);
+        }
+    }
+
+    fn build_feeds(lps: Vec<Post>, name: &str, conf: &Configuration) {
+        let now = Utc::now();
+
+        let filename = if name == "cmain" {
+            "./output/rss.xml".to_string()
+        } else {
+            format!("./output/categories/{}.xml", name)
+        };
+
+        let mut items: Vec<rss::Item> = Vec::new();
+        for post in lps {
+            if post.changed == true {
+                // Use current date here
+                let item = rss::ItemBuilder::default()
+                    .title(post.title.clone())
+                    .link(post.url.clone())
+                    .pub_date(now.to_rfc2822())
+                    .description(post.body.clone())
+                    .build();
+                match item {
+                    Ok(i) => items.push(i),
+                    Err(msg) => println!("{}", msg),
+                }
+            } else {
+                let item = rss::ItemBuilder::default()
+                    .title(post.title.clone())
+                    .link(post.url.clone())
+                    .pub_date(post.date.to_rfc2822())
+                    .description(post.body.clone())
+                    .build();
+                match item {
+                    Ok(i) => items.push(i),
+                    Err(msg) => println!("{}", msg),
+                }
+            }
+        }
+
+        let channel = rss::ChannelBuilder::default()
+            .title(conf.title.clone())
+            .link(conf.url.clone())
+            .description(conf.title.clone())
+            .items(items)
+            .build();
+        match channel {
+            Ok(right) => {
+                save_rss(filename, right.to_string());
+            }
+            Err(msg) => println!("{}", msg),
+        }
     }
 
 }
