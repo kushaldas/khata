@@ -218,6 +218,11 @@ pub mod libkhata {
             }
         }
     }
+    #[derive(Debug, Clone, Serialize)]
+    pub struct Archiveyear<'a> {
+        year: String,
+        posts: Vec<SerialPost<'a>>,
+    }
 
     #[derive(Debug, Clone, Serialize)]
     pub struct Catpage<'a> {
@@ -467,6 +472,49 @@ pub mod libkhata {
         save_file(filename, result);
     }
 
+    fn create_archive(tera: &Tera, pageyears: HashMap<String, Vec<Post>>, conf: &Configuration) {
+        let mut context = Context::new();
+        let mut result = "".to_string();
+        let mut keys: Vec<String> = Vec::new();
+        let mut years: Vec<Archiveyear> = vec![];
+        for key in pageyears.keys() {
+            keys.push(String::from(key));
+        }
+        keys.sort();
+        keys.reverse();
+
+        // Now for each year, add a sorted Vec
+        for key in keys {
+            let p = pageyears.get(&key).unwrap();
+            let mut posts = p.clone();
+            posts.sort_by_key(|v| Reverse(v.date));
+            let lps: Vec<SerialPost> = posts.iter().map(|p| SerialPost::new(p)).collect();
+            let a = Archiveyear {
+                year: String::from(key),
+                posts: lps.clone(),
+            };
+            years.push(a);
+        }
+        context.insert("archives", &years);
+        context.insert("conf", &conf);
+
+        // Now render and save archive.html
+        result = tera.render("archive.html", &context).unwrap();
+        let filename = "./output/archive.html".to_string();
+        save_file(filename, result);
+
+        // Now generate each year's posts.
+        for ar in years {
+            context = Context::new();
+            context.insert("conf", &conf);
+            context.insert("ar", &ar);
+
+            result = tera.render("year.html", &context).unwrap();
+            let filename = format!("./output/{}.html", ar.year);
+            save_file(filename, result);
+        }
+    }
+
     fn build_post(tera: &Tera, post: &Post, ptype: String) {
         let mut filename = "".to_string();
         let mut result: String = "".to_string();
@@ -522,7 +570,7 @@ pub mod libkhata {
 
             // TODO: check for hashes here.
             if rebuildall == true {
-                println!("Building post: {}", filename);
+                //println!("Building post: {}", filename);
                 build_post(&tera, &post, "post".to_string());
                 rebuild_index = true;
                 post.changed = true;
@@ -554,7 +602,6 @@ pub mod libkhata {
             cats: catnames.clone(),
             conf: &conf,
         };
-        //println!("{:?}", catpage);
 
         build_categories(&tera, catpage);
 
@@ -576,6 +623,8 @@ pub mod libkhata {
             // Now build the feed for that tag
             build_feeds(final_lps, &key, &conf);
         }
+
+        create_archive(&tera, pageyears.clone(), &conf);
 
         create_index_files(&tera, ps.clone(), "index");
         if rebuild_index == true {
