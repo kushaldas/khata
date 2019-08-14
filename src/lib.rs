@@ -280,7 +280,13 @@ pub mod libkhata {
             let trimmped_word = word.trim();
             let temp_word = trimmped_word.to_string();
 
-            finaltags.insert(create_slug(temp_word.clone()), temp_word);
+            let slug = create_slug(temp_word.clone());
+            // No empty tags
+            if slug == "" {
+                continue;
+            }
+
+            finaltags.insert(slug, temp_word);
         }
         //let mut tags: Vec<String> = tags_temp.iter().map(|x| x.to_string()).collect();
         let mut options = Options::empty();
@@ -325,7 +331,8 @@ pub mod libkhata {
         let mut context = Context::new();
         context.insert("catpage", &catpage);
         let result = tera.render("category-index.html", &context).unwrap();
-        // TODO: Now save the file in the right place.
+        let filename = "./output/categories/index.html".to_string();
+        save_file(filename, result);
     }
 
     // Check if the indexfile exists on disk or not
