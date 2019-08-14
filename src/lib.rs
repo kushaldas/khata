@@ -145,6 +145,7 @@ pub mod libkhata {
     use chrono::prelude::*;
     use pulldown_cmark::{html, Options, Parser};
     use serde::{Deserialize, Serialize};
+    use serde_json::json;
     use sha2::{Digest, Sha256};
     use std::cmp::Reverse;
     use std::collections::HashMap;
@@ -176,6 +177,7 @@ pub mod libkhata {
     pub struct Post<'a> {
         title: String,
         slug: String,
+        filename: String,
         author: String,
         body: String,
         hash: String,
@@ -192,6 +194,7 @@ pub mod libkhata {
     pub struct SerialPost<'a> {
         title: String,
         slug: String,
+        filename: String,
         author: String,
         body: String,
         hash: String,
@@ -208,6 +211,7 @@ pub mod libkhata {
                 title: post.title.clone(),
                 slug: post.slug.clone(),
                 body: post.body.clone(),
+                filename: post.filename.clone(),
                 hash: post.hash.clone(),
                 sdate: post.sdate.clone(),
                 tags: post.tags.clone(),
@@ -231,7 +235,7 @@ pub mod libkhata {
     }
 
     pub fn read_post(filename: String, conf: &Configuration) -> Post {
-        let content = read_file(filename);
+        let content = read_file(filename.clone());
         let tmp_content = content.clone();
         let lines: Vec<&str> = tmp_content.split("\n").collect();
 
@@ -309,6 +313,7 @@ pub mod libkhata {
             title: title,
             slug: slug.clone(),
             body: html_output,
+            filename: filename,
             hash: hashs,
             date: dt,
             sdate: date,
@@ -319,6 +324,30 @@ pub mod libkhata {
             conf: conf,
         };
         post
+    }
+
+    fn create_fdb() {
+        let filename = ".scrrdkdss.json";
+        let path = Path::new(&filename);
+        if path.exists() == false {
+            let mut map: HashMap<String, String> = HashMap::new();
+            map.insert("file".to_string(), "filehash".to_string());
+            let result = json!(map);
+            save_file(filename.to_string(), result.to_string());
+        }
+    }
+
+    fn get_fdb() -> HashMap<String, String> {
+        let filename = ".scrrdkdss.json";
+        let content = read_file(filename.to_string());
+        let result: HashMap<String, String> = serde_json::from_str(content.as_str()).unwrap();
+        result
+    }
+
+    fn save_fdb(map: HashMap<String, String>) {
+        let filename = ".scrrdkdss.json";
+        let result = json!(map);
+        save_file(filename.to_string(), result.to_string());
     }
 
     pub fn get_conf() -> Configuration {
@@ -531,6 +560,7 @@ pub mod libkhata {
             title: post.title.clone(),
             slug: post.slug.clone(),
             body: post.body.clone(),
+            filename: post.filename.clone(),
             hash: post.hash.clone(),
             sdate: post.sdate.clone(),
             tags: post.tags.clone(),
@@ -550,8 +580,8 @@ pub mod libkhata {
         save_file(filename, result);
     }
 
-    pub fn rebuild(rebuildall: bool) {
-        let mut rebuild_index = false;
+    pub fn rebuild(rebuildall: bool, rbi: bool) {
+        let mut rebuild_index = rbi;
         let mut indexlist: Vec<Post> = vec![];
         let mut ps: Vec<Post> = vec![];
         let mut pageyears: HashMap<String, Vec<Post>> = HashMap::new();
@@ -560,6 +590,8 @@ pub mod libkhata {
         let mut cat_needs_build: HashMap<String, bool> = HashMap::new();
 
         let conf = get_conf();
+        create_fdb();
+        let mut fdb = get_fdb();
         let post_files = ls("./posts/".to_string());
         let tera = compile_templates!("templates/**/*");
 
@@ -575,12 +607,20 @@ pub mod libkhata {
                 }
             }
 
+            let hash: String = match fdb.get(&post.filename) {
+                Some(val) => val.clone(),
+                None => "".to_string(),
+            };
+
             // TODO: check for hashes here.
-            if rebuildall == true {
-                //println!("Building post: {}", filename);
+            if rebuildall == true || post.hash != hash {
+                println!("Building post: {}", filename);
                 build_post(&tera, &post, "post".to_string());
                 rebuild_index = true;
                 post.changed = true;
+
+                // update fdb
+                fdb.insert(post.filename.clone(), post.hash.clone());
 
                 // The following tags need rebuild
                 for (key, _value) in &post.tags {
@@ -604,6 +644,8 @@ pub mod libkhata {
 
             ps.push(post);
         }
+
+        save_fdb(fdb);
 
         let catpage = Catpage {
             cats: catnames.clone(),

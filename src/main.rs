@@ -32,6 +32,8 @@ fn main() {
     }
 
     if matches.is_present("rebuild") {
-        rebuild(true);
+        rebuild(true, true);
     }
+
+    rebuild(false, false);
 }
