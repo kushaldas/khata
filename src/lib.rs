@@ -379,7 +379,7 @@ pub mod libkhata {
     // Creates index files a type of indexname.
     // `index` is a valid indexname.
     fn create_index_files(tera: &Tera, mut lps: Vec<Post>, indexname: &str) {
-        let POSTN = 10;
+        let posts_in_each_index = 10;
         let mut prev = 0;
         let mut next: i32 = 0;
         let mut index = 1;
@@ -400,7 +400,7 @@ pub mod libkhata {
             num = num + 1;
 
             // For each 10 posts, we create a new index page
-            if num == POSTN {
+            if num == posts_in_each_index {
                 if check_index(String::from(indexname), index) == false {
                     index_page_flag = true;
                 }
@@ -419,9 +419,11 @@ pub mod libkhata {
 
                     // I don't remmeber the logic here.
                     // TODO: Add some comment to explain the logic please.
-                    if (index * POSTN) < length && (length - index * POSTN) > POSTN {
+                    if (index * posts_in_each_index) < length
+                        && (length - index * posts_in_each_index) > posts_in_each_index
+                    {
                         next = ((index + 1) as i32).into();
-                    } else if (index * POSTN) == length {
+                    } else if (index * posts_in_each_index) == length {
                         next = -1;
                     } else {
                         next = 0;
