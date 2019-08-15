@@ -670,7 +670,7 @@ pub mod libkhata {
                 final_lps = lps;
             }
             // Now build the feed for that tag
-            build_feeds(final_lps, &key, &conf);
+            build_feeds(final_lps, &key, &conf, rebuildall);
         }
 
         create_archive(&tera, pageyears.clone(), &conf);
@@ -687,11 +687,14 @@ pub mod libkhata {
             } else {
                 final_lps = lps;
             }
-            build_feeds(final_lps, "cmain", &conf);
+            build_feeds(final_lps, "cmain", &conf, rebuildall);
         }
     }
 
-    fn build_feeds(lps: Vec<Post>, name: &str, conf: &Configuration) {
+    // Build the RSS feeds.
+    // Use the time from the post normally
+    // Use updated time only when it is a rebuild of the whole site
+    fn build_feeds(lps: Vec<Post>, name: &str, conf: &Configuration, rebuild: bool) {
         let now = Utc::now();
 
         let filename = if name == "cmain" {
@@ -702,12 +705,19 @@ pub mod libkhata {
 
         let mut items: Vec<rss::Item> = Vec::new();
         for post in lps {
+            // date is now only for rebuilding the whole
+            // site.
+            let date = if rebuild == true {
+                now.to_rfc2822()
+            } else {
+                post.date.to_rfc2822()
+            };
+
             if post.changed == true {
-                // Use current date here
                 let item = rss::ItemBuilder::default()
                     .title(post.title.clone())
                     .link(post.url.clone())
-                    .pub_date(now.to_rfc2822())
+                    .pub_date(date)
                     .description(post.body.clone())
                     .build();
                 match item {
