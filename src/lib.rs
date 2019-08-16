@@ -114,7 +114,8 @@ pub mod utils {
             .render("newpost.md", &ctx)
             .expect("Failed to render template");
         let filename = format!("./posts/{}.md", slug);
-        save_file(filename, content);
+        save_file(filename.clone(), content);
+        println!("Created new post: {}", filename);
     }
     pub fn ls(dirname: String) -> Vec<String> {
         let mut names: Vec<String> = vec![];
