@@ -20,6 +20,7 @@ pub mod utils {
     use std::io;
     use std::io::prelude::*;
     use std::path::Path;
+    use std::process::Command;
     use tera::Context;
 
     pub fn save_file(name: String, content: String) {
@@ -129,6 +130,17 @@ pub mod utils {
             }
         }
         names
+    }
+
+    // Syncs any new blog post source
+    pub fn sync_posts() {
+        let output = Command::new("/usr/bin/rsync")
+            .arg("-avz")
+            .arg("./posts/")
+            .arg("./output/posts/")
+            .output()
+            .unwrap();
+        //println!("{:#?}", output);
     }
 }
 
@@ -599,6 +611,9 @@ pub mod libkhata {
         let tera = compile_templates!("templates/**/*");
 
         for filename in post_files {
+            if &filename.ends_with(".md") != &true {
+                continue;
+            }
             let mut post = read_post(filename.clone(), &conf);
             let postdate = post.date.year().to_string();
             let page_posts = pageyears.get_mut(&postdate);
@@ -692,6 +707,9 @@ pub mod libkhata {
             }
             build_feeds(final_lps, "cmain", &conf, rebuildall);
         }
+
+        // Now sync the .md files
+        sync_posts();
     }
 
     // Build the RSS feeds.
