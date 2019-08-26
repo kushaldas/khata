@@ -729,7 +729,7 @@ pub mod libkhata {
             // date is now only for rebuilding the whole
             // site.
             let date = if rebuild == true {
-                now.to_rfc2822()
+                post.date.to_rfc2822()
             } else {
                 post.date.to_rfc2822()
             };
