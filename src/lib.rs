@@ -663,6 +663,27 @@ pub mod libkhata {
             ps.push(post);
         }
 
+        // Now rebuild the pages if required
+        let page_files = ls("./pages/".to_string());
+
+        for filename in page_files {
+            if &filename.ends_with(".md") != &true {
+                continue;
+            }
+            let post = read_post(filename.clone(), &conf);
+            let hash: String = match fdb.get(&post.filename) {
+                Some(val) => val.clone(),
+                None => "".to_string(),
+            };
+            if rebuildall == true || post.hash != hash {
+                println!("Building page: {}", filename);
+                build_post(&tera, &post, "page".to_string());
+
+                // update fdb
+                fdb.insert(post.filename.clone(), post.hash.clone());
+            }
+        }
+
         save_fdb(fdb);
 
         let catpage = Catpage {

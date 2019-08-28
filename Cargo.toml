@@ -1,6 +1,6 @@
 [package]
 name = "khata"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Kushal Das <mail@kushaldas.in>"]
 description = "Static blogging tool, Shonku reimplemented."
 license = "GPL-3.0-or-later"
