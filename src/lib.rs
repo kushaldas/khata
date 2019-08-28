@@ -422,8 +422,8 @@ pub mod libkhata {
                 if index_page_flag == true {
                     index_page_flag = false;
                     sort_index.sort_by_key(|v| Reverse(v.date));
-                    let lps: Vec<SerialPost> =
-                        sort_index.iter().map(|p| SerialPost::new(p)).collect();
+                    //let lps: Vec<SerialPost> =
+                    //    sort_index.iter().map(|p| SerialPost::new(p)).collect();
                     if index == 1 {
                         prev = 0;
                     } else {
@@ -737,8 +737,6 @@ pub mod libkhata {
     // Use the time from the post normally
     // Use updated time only when it is a rebuild of the whole site
     fn build_feeds(lps: Vec<Post>, name: &str, conf: &Configuration, rebuild: bool) {
-        let now = Utc::now();
-
         let filename = if name == "cmain" {
             "./output/rss.xml".to_string()
         } else {
