@@ -1,0 +1,132 @@
+body {
+  padding-top: 60px;
+  font-family: 'Open Sans', sans-serif;
+}
+@media (max-width: 979px) {
+  body {
+    padding-top: 0px;
+  }
+}
+#container {
+    width: 960px;
+    margin: 50 auto;
+}
+
+#contentcolumn {
+    max-width: 760px;
+}
+#q {
+    width: 150px;
+}
+
+img {
+    max-width: 90%;
+}
+
+.postbox {
+    border-bottom: 2px solid darkgrey;
+    margin-bottom: 12px;
+    color: #4d4d4d;
+}
+
+.footerbox {padding: 15px; text-align: center; margin-bottom: 15px;}
+
+td.label {
+    /* Issue #290 */
+    background-color: inherit;
+}
+
+.footnote-reference {
+    /* Issue 290 */
+    vertical-align: super;
+    font-size: xx-small;
+}
+
+.caption {
+    /* Issue 292 */
+    text-align: center;
+}
+
+div.figure > a > img {
+    /* Issue 292 */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.sidebar, div.admonition, div.attention, div.caution, div.danger, div.error, div.hint, div.important, div.note, div.tip, div.warning {
+    /* Issue 277 */
+    border: 1px solid #aaa;
+    border-radius: 5px;
+}
+
+blockquote p, blockquote {
+  font-size: 17.5px;
+  font-weight: 300;
+  line-height: 1.25;
+}
+
+ul.bricks > li {
+    display: inline;
+    background-color: lightblue;
+    padding: 8px;
+    border-radius: 5px;
+    line-height: 3;
+    white-space:nowrap;
+    margin: 3px;
+}
+
+h1, h2, h3, h4, h5, h6, h7 {
+    margin-top: -20px;
+    padding-top: 40px;
+}
+
+h1 { font-size: 2.2em; font-family: 'Vollkorn', serif;}
+h2 { font-size: 1.5em; }
+h3 { font-size: 1.17em; }
+h5 { font-size: .83em; }
+h6 { font-size: .75em; }
+
+p { 
+    font-style: normal;
+    font-weight: 300;
+}
+
+.navbar-fixed-top .container {
+    padding-top: 30px;
+}
+.navbar-static-top .navbar-inner {
+    box-shadow: none;
+    border-width: none;
+    box-shadow: none;
+    heigth: 30;
+}
+.container-fluid {
+    padding-top: 50px;
+}
+.navbar-inner {
+    background-color: None;
+    background-image: None;
+    height: 100px;   
+}
+.nav {
+    font-family: 'Akzidenz_Med',Helvetica,Arial,sans-serif;
+    font-weight: bold;
+
+}
+
+.navbar .brand {
+    padding-top: 0;
+    margin-left: auto;
+    margin-right: auto
+}
+
+.nav-collapse.collapse {
+    padding-top: 7px;
+}
+
+.label-info, .badge-info {
+    background-color: #0088CC;
+}
+
+.postbox img {margin-top: 5px; margin-bottom: 5px;}
