@@ -5,17 +5,17 @@ This is the Rust implementation of
 
 This is the very early stage.
 
-### To build from the source
+## To build from the source
 
 ```bash
 cargo build --release
 ```
 
-### How to use?
+## How to use?
 
 You will the following directory structure.
 
-```
+```text
 |-> templates
 |-> pages
 |-> posts
@@ -27,11 +27,20 @@ You will the following directory structure.
     |-> assets
 ```
 
+You can make them all as
+
+```bash
+mkdir -p pages posts output/{posts,pages,categories}
+cp -r assests output/
+```
+
+### Create a new blog post
+
 ```bash
 ./khata --new
 ```
 
-Will help you to create a new post.
+### Build the posts after any change
 
 ```bash
 ./khata
@@ -39,11 +48,15 @@ Will help you to create a new post.
 
 To build the updated/new posts.
 
+### To rebuild the whole site
+
 ```bash
 ./khata --rebuild
 ```
 
 To rebuild the whole site.
+
+### To view the help
 
 ```bash
 ./khata -h
