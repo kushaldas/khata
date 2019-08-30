@@ -372,6 +372,7 @@ pub mod libkhata {
     fn build_categories(tera: &Tera, catpage: Catpage) {
         let mut context = Context::new();
         context.insert("catpage", &catpage);
+        context.insert("conf", &catpage.conf);
         let result = tera.render("category-index.html", &context).unwrap();
         let filename = "./output/categories/index.html".to_string();
         save_file(filename, result);
@@ -585,6 +586,7 @@ pub mod libkhata {
             conf: post.conf,
         };
         context.insert("pdata", &sp);
+        context.insert("conf", &sp.conf);
         if ptype == "post" {
             result = tera.render("post.html", &context).unwrap();
             filename = format!("./output/posts/{}.html", post.slug);

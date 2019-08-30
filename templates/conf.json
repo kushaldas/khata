@@ -1,0 +1,15 @@
+{
+	
+	"author": "SITE AUTHOR",
+	"title": "SITE TITLE",
+	"url": "http://localhost/",
+	"description": "Description of the site",
+	"logo" : "URL for logo",
+	"content_footer": "Copyright 2014",
+	"email": "author@email",
+	"disqus": "yourdisqus",
+	"links": [{"link":"/pages/about-me.html", "text": "About"},
+			{"link":"/categories/", "text":"Categories"},
+			{"link":"/archive.html", "text":"Archive"}]
+
+}

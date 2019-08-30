@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block header %}
+<title>{{ pdata.title }}</title>
+<link href="../assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/rst.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/code.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/colorbox.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/theme.css" rel="stylesheet" type="text/css">
+<!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+<link rel="alternate" type="application/rss+xml" title="RSS" href="rss.xml">
+
+<link rel="stylesheet" type="text/css" href="//cloud.typography.com/7584432/609202/css/fonts.css">
+<link href="http://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+{% endblock header %}
+{% block body %}
+<div class="postbox">
+  <h1><a href="#">{{ pdata.title }}</a></h1>
+  <hr>
+  <small>
+    Posted: {{ pdata.sdate }} |
+
+
+    <a href="{{ pdata.slug}}.md">Source</a>
+    | More posts about
+    {% for key, value in pdata.tags %}
+    <a href="../categories/{{ key }}.html"><span class="badge badge-info">{{ value }}</span></a>
+    {% endfor %}
+  </small>
+  <hr>
+
+  {{ pdata.body | safe }}
+  {% endblock body %}

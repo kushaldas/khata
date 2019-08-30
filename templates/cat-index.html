@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block header %}
+<title>
+    {{ conf.title }}
+</title>
+<link href="../assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/rst.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/code.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/colorbox.css" rel="stylesheet" type="text/css">
+<link href="../assets/css/theme.css" rel="stylesheet" type="text/css">
+<!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+<link rel="alternate" type="application/rss+xml" title="RSS" href="rss.xml">
+
+<link rel="stylesheet" type="text/css" href="//cloud.typography.com/7584432/609202/css/fonts.css">
+<link href="http://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+{% endblock header %}
+{% block body %}
+{% for post in posts %}
+<div class="postbox">
+    {% if main %}
+    <h1><a href="posts/{{ post.slug }}.html">{{ post.title }}</a></h1>
+    {% else %}
+    <h1><a href="../posts/{{ post.slug }}.html">{{ post.title }}</a></h1>
+    {% endif %}
+    <small>
+        Posted: {{ post.sdate }}
+    </small>
+    <hr>
+    {{ post.body  |  safe }}
+    <p>
+        <a href="posts/{{ slug }}.html#disqus_thread">Comments</a>
+    </p>
+</div>
+{% endfor %}
+<ul class="pager">
+    {% if NextF %}
+    {% if NextLast %}
+    <li class="previous">
+        <a href="{{ slug }}.html">Newer posts</a>
+    </li>
+    {% else %}
+    <li class="previous">
+        <a href="{{ slug }}-{{ Next }}.html">Newer posts</a>
+    </li>
+    {% endif %}
+    {% endif %}
+    {% if PreviousF %}
+    <li class="next">
+        <a href="{{ slug }}-{{ Previous }}.html">Older posts</a>
+    </li>
+    {% endif %}
+</ul>
+{% endblock body %}
