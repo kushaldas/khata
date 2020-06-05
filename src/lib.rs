@@ -15,7 +15,6 @@ pub mod utils {
     use regex::Regex;
     use std::error::Error;
     use std::fs;
-    use std::fs::DirEntry;
     use std::fs::File;
     use std::io;
     use std::io::prelude::*;
@@ -26,13 +25,12 @@ pub mod utils {
     pub fn save_file(name: String, content: String) {
         let path = Path::new(&name);
         let mut file = match File::create(&path) {
-            Err(why) => panic!("Error in creating file {}", why.description()),
+            Err(why) => panic!("Error in creating {:?} {}", path, why),
             Ok(file) => file,
         };
 
-        // Write the `LOREM_IPSUM` string to `file`, returns `io::Result<()>`
         match file.write_all(content.as_bytes()) {
-            Err(why) => panic!("Failed to write to file: {}", why),
+            Err(why) => panic!("Failed to write to {:?} : {}", path, why),
             Ok(_) => (),
         };
     }
@@ -40,7 +38,7 @@ pub mod utils {
     pub fn save_rss(name: String, content: String) {
         let path = Path::new(&name);
         let mut file = match File::create(&path) {
-            Err(why) => panic!("Error in creating file {}", why.description()),
+            Err(why) => panic!("Error in creating RSS feed file {:?} {}", path, why),
             Ok(file) => file,
         };
 
@@ -64,7 +62,7 @@ pub mod utils {
     pub fn read_file(name: String) -> String {
         let path = Path::new(&name);
         let mut file = match File::open(&path) {
-            Err(why) => panic!("Error in opening file {}", why.description()),
+            Err(why) => panic!("Error in opening {:?} {}", path, why),
             Ok(file) => file,
         };
         let mut contents = String::new();
@@ -134,7 +132,7 @@ pub mod utils {
 
     // Syncs any new blog post source
     pub fn sync_posts() {
-        let output = Command::new("/usr/bin/rsync")
+        let _output = Command::new("/usr/bin/rsync")
             .arg("-avz")
             .arg("./posts/")
             .arg("./output/posts/")
@@ -310,7 +308,26 @@ pub mod libkhata {
         options.insert(Options::ENABLE_STRIKETHROUGH);
         options.insert(Options::ENABLE_TASKLISTS);
         options.insert(Options::ENABLE_TABLES);
-        let parser = Parser::new_ext(&content, options);
+        let parser = Parser::new_ext(&content, options).map(|event| match event {
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Image(_link_type, dest, title)) => {
+                // If the image has a relative path, convert into absolute URL.
+                if dest.starts_with("/") {
+                    let mut chars = dest.chars();
+                    chars.next();
+                    let news = format!("{}{}", conf.url, chars.as_str());
+                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Image(
+                        _link_type,
+                        pulldown_cmark::CowStr::Boxed(Box::from(&news[..])),
+                        title,
+                    ))
+                } else {
+                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Image(
+                        _link_type, dest, title,
+                    ))
+                }
+            }
+            _ => event,
+        });
 
         // Write to String buffer.
         let mut html_output = String::new();
@@ -793,5 +810,4 @@ pub mod libkhata {
             Err(msg) => println!("{}", msg),
         }
     }
-
 }
