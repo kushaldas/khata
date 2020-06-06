@@ -399,7 +399,8 @@ pub mod libkhata {
     fn check_index(indexname: String, index: u32) -> bool {
         let name = match &indexname[..] {
             "index" => format!("./output/{}-{}.html", indexname, index),
-            _ => format!("./output/categories/{}-{}.html", indexname, index),};
+            _ => format!("./output/categories/{}-{}.html", indexname, index),
+        };
         let path = Path::new(&name);
         path.exists()
     }
@@ -601,12 +602,16 @@ pub mod libkhata {
         };
         context.insert("pdata", &sp);
         context.insert("conf", &sp.conf);
-        if ptype == "post" {
-            result = tera.render("post.html", &context).unwrap();
-            filename = format!("./output/posts/{}.html", post.slug);
-        } else if ptype == "page" {
-            result = tera.render("page.html", &context).unwrap();
-            filename = format!("./output/pages/{}.html", post.slug);
+        match &ptype[..] {
+            "post" => {
+                result = tera.render("post.html", &context).unwrap();
+                filename = format!("./output/posts/{}.html", post.slug);
+            }
+            "page" => {
+                result = tera.render("page.html", &context).unwrap();
+                filename = format!("./output/pages/{}.html", post.slug);
+            }
+            _ => (), // TODO: Make it for idiomatic
         }
         save_file(filename, result);
     }
