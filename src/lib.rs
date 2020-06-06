@@ -397,12 +397,9 @@ pub mod libkhata {
 
     // Check if the indexfile exists on disk or not
     fn check_index(indexname: String, index: u32) -> bool {
-        let mut name: String = "".to_string();
-        if indexname == "index".to_string() {
-            name = format!("./output/{}-{}.html", indexname, index);
-        } else {
-            name = format!("./output/categories/{}-{}.html", indexname, index);
-        }
+        let name = match &indexname[..] {
+            "index" => format!("./output/{}-{}.html", indexname, index),
+            _ => format!("./output/categories/{}-{}.html", indexname, index),};
         let path = Path::new(&name);
         path.exists()
     }
