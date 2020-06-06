@@ -13,7 +13,6 @@ pub mod utils {
 
     use chrono::prelude::*;
     use regex::Regex;
-    use std::error::Error;
     use std::fs;
     use std::fs::File;
     use std::io;
@@ -340,18 +339,18 @@ pub mod libkhata {
         let hashs = hex::encode(&result[..]);
 
         let post = Post {
-            title: title,
+            title,
             slug: slug.clone(),
             body: html_output,
-            filename: filename,
+            filename,
             hash: hashs,
             date: dt,
             sdate: date,
             tags: finaltags,
             changed: false,
-            author: author,
+            author,
             url: format!("{}posts/{}.html", conf.url.clone(), slug),
-            conf: conf,
+            conf,
         };
         post
     }
@@ -396,7 +395,7 @@ pub mod libkhata {
     }
 
     // Check if the indexfile exists on disk or not
-    fn check_index(indexname: String, index: u32) -> bool {
+    fn check_index(indexname: String, index: i32) -> bool {
         let name = match &indexname[..] {
             "index" => format!("./output/{}-{}.html", indexname, index),
             _ => format!("./output/categories/{}-{}.html", indexname, index),
@@ -409,13 +408,13 @@ pub mod libkhata {
     // `index` is a valid indexname.
     fn create_index_files(tera: &Tera, mut lps: Vec<Post>, indexname: &str) {
         let posts_in_each_index = 10;
-        let mut prev = 0;
-        let mut next: i32 = 0;
-        let mut index = 1;
+        let mut prev: i32;
+        let mut next: i32;
+        let mut index:i32 = 1;
         let mut index_page_flag = false;
         let mut num = 0;
         // length of the full list
-        let length = (lps.len() as u32).into();
+        let length = (lps.len() as i32).into();
         // We start from the oldest post
         // That is why we are sorting here.
         lps.sort_by_key(|v| v.date);
@@ -443,7 +442,7 @@ pub mod libkhata {
                     if index == 1 {
                         prev = 0;
                     } else {
-                        prev = index - 1;
+                        prev = (index - 1) as i32;
                     }
 
                     // I don't remmeber the logic here.
@@ -478,14 +477,14 @@ pub mod libkhata {
     fn build_index(
         tera: &Tera,
         pss: Vec<SerialPost>,
-        index: u32,
-        pre: u32,
+        index: i32,
+        pre: i32,
         next: i32,
         indexname: &str,
         conf: &Configuration,
     ) {
-        let mut result: String = "".to_string();
-        let mut filename: String = "".to_string();
+        let result: String;
+        let filename: String;
         let mut context = Context::new();
         context.insert("posts", &pss);
         context.insert("slug", indexname);
@@ -541,7 +540,7 @@ pub mod libkhata {
 
     fn create_archive(tera: &Tera, pageyears: HashMap<String, Vec<Post>>, conf: &Configuration) {
         let mut context = Context::new();
-        let mut result = "".to_string();
+        let mut result;
         let mut keys: Vec<String> = Vec::new();
         let mut years: Vec<Archiveyear> = vec![];
         for key in pageyears.keys() {
@@ -618,7 +617,7 @@ pub mod libkhata {
 
     pub fn rebuild(rebuildall: bool, rbi: bool) {
         let mut rebuild_index = rbi;
-        let mut indexlist: Vec<Post> = vec![];
+        //let indexlist: Vec<Post>;
         let mut ps: Vec<Post> = vec![];
         let mut pageyears: HashMap<String, Vec<Post>> = HashMap::new();
         let mut catslinks: HashMap<String, Vec<Post>> = HashMap::new();
@@ -716,7 +715,7 @@ pub mod libkhata {
 
         // Now rebuild the category pages as required
         for (key, _) in &cat_needs_build {
-            let mut final_lps: Vec<Post> = Vec::new();
+            let final_lps: Vec<Post>;
             let localposts = catslinks.get(key).unwrap();
             let mut lps = localposts.clone();
             lps.sort_by_key(|v| Reverse(v.date));
@@ -741,7 +740,7 @@ pub mod libkhata {
 
             let mut lps = ps.clone();
             lps.sort_by_key(|v| Reverse(v.date));
-            let mut final_lps: Vec<Post> = Vec::new();
+            let final_lps: Vec<Post>;
             if lps.len() >= 10 {
                 final_lps = lps[..10].to_vec();
             } else {
