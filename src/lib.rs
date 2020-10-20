@@ -324,7 +324,24 @@ pub mod libkhata {
                         _link_type, dest, title,
                     ))
                 }
-            }
+            },
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(_link_type, dest, title)) => {
+                // If the link has a relative path, convert into absolute URL.
+                if dest.starts_with("/") {
+                    let mut chars = dest.chars();
+                    chars.next();
+                    let news = format!("{}{}", conf.url, chars.as_str());
+                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(
+                        _link_type,
+                        pulldown_cmark::CowStr::Boxed(Box::from(&news[..])),
+                        title,
+                    ))
+                } else {
+                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(
+                        _link_type, dest, title,
+                    ))
+                }
+            },
             _ => event,
         });
 
@@ -767,17 +784,17 @@ pub mod libkhata {
         for post in lps {
             // date is now only for rebuilding the whole
             // site.
-            let date = if rebuild == true {
-                post.date.to_rfc2822()
-            } else {
-                post.date.to_rfc2822()
-            };
+            let date = post.date.format("%a, %d %b %Y %T %z");
+
+            let mut guid = rss::Guid::default();
+            guid.set_value(post.url.clone());
 
             if post.changed == true {
                 let item = rss::ItemBuilder::default()
                     .title(post.title.clone())
                     .link(post.url.clone())
-                    .pub_date(date)
+                    .guid(Some(guid))
+                    .pub_date(format!("{}", date))
                     .description(post.body.clone())
                     .build();
                 match item {
@@ -788,7 +805,8 @@ pub mod libkhata {
                 let item = rss::ItemBuilder::default()
                     .title(post.title.clone())
                     .link(post.url.clone())
-                    .pub_date(post.date.to_rfc2822())
+                    .guid(Some(guid))
+                    .pub_date(format!("{}", date))
                     .description(post.body.clone())
                     .build();
                 match item {
