@@ -773,10 +773,14 @@ pub mod libkhata {
                 post.date.to_rfc2822()
             };
 
+            let mut guid = rss::Guid::default();
+            guid.set_value(post.url.clone());
+
             if post.changed == true {
                 let item = rss::ItemBuilder::default()
                     .title(post.title.clone())
                     .link(post.url.clone())
+                    .guid(Some(guid))
                     .pub_date(date)
                     .description(post.body.clone())
                     .build();
@@ -788,6 +792,7 @@ pub mod libkhata {
                 let item = rss::ItemBuilder::default()
                     .title(post.title.clone())
                     .link(post.url.clone())
+                    .guid(Some(guid))
                     .pub_date(post.date.to_rfc2822())
                     .description(post.body.clone())
                     .build();
