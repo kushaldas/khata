@@ -767,11 +767,7 @@ pub mod libkhata {
         for post in lps {
             // date is now only for rebuilding the whole
             // site.
-            let date = if rebuild == true {
-                post.date.to_rfc2822()
-            } else {
-                post.date.to_rfc2822()
-            };
+            let date = post.date.format("%a, %d %b %Y %T %z");
 
             let mut guid = rss::Guid::default();
             guid.set_value(post.url.clone());
@@ -781,7 +777,7 @@ pub mod libkhata {
                     .title(post.title.clone())
                     .link(post.url.clone())
                     .guid(Some(guid))
-                    .pub_date(date)
+                    .pub_date(format!("{}", date))
                     .description(post.body.clone())
                     .build();
                 match item {
@@ -793,7 +789,7 @@ pub mod libkhata {
                     .title(post.title.clone())
                     .link(post.url.clone())
                     .guid(Some(guid))
-                    .pub_date(post.date.to_rfc2822())
+                    .pub_date(format!("{}", date))
                     .description(post.body.clone())
                     .build();
                 match item {
