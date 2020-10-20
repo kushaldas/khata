@@ -324,7 +324,24 @@ pub mod libkhata {
                         _link_type, dest, title,
                     ))
                 }
-            }
+            },
+            pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(_link_type, dest, title)) => {
+                // If the link has a relative path, convert into absolute URL.
+                if dest.starts_with("/") {
+                    let mut chars = dest.chars();
+                    chars.next();
+                    let news = format!("{}{}", conf.url, chars.as_str());
+                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(
+                        _link_type,
+                        pulldown_cmark::CowStr::Boxed(Box::from(&news[..])),
+                        title,
+                    ))
+                } else {
+                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(
+                        _link_type, dest, title,
+                    ))
+                }
+            },
             _ => event,
         });
 
