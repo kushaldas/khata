@@ -31,7 +31,7 @@ You can make them all as
 
 ```bash
 mkdir -p pages posts output/{posts,pages,categories}
-cp -r assests output/
+cp -r assets output/
 ```
 
 ### Create a new blog post
