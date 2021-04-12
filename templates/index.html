@@ -15,7 +15,16 @@
         Posted: {{ post.sdate }}
     </small>
     <hr>
-    {{ post.body | safe }}
+    {% if post.excerpt %}
+        {{ post.excerpt | safe }}
+        {% if main %}
+        <strong><a href="posts/{{ post.slug }}.html">Read more</a></strong>
+        {% else %}
+        <strong><a href="posts/{{ post.slug }}.html">Read more</a></strong>
+        {% endif %}
+    {% else %}
+        {{ post.body | safe }}
+    {% endif %}
 
 </div>
 {% endfor %}

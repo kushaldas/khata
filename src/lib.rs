@@ -190,6 +190,7 @@ pub mod libkhata {
         filename: String,
         author: String,
         body: String,
+        excerpt: String,
         hash: String,
         date: DateTime<Local>,
         sdate: String,
@@ -207,6 +208,7 @@ pub mod libkhata {
         filename: String,
         author: String,
         body: String,
+        excerpt: String,
         hash: String,
         sdate: String,
         tags: HashMap<String, String>,
@@ -221,6 +223,7 @@ pub mod libkhata {
                 title: post.title.clone(),
                 slug: post.slug.clone(),
                 body: post.body.clone(),
+                excerpt: post.excerpt.clone(),
                 filename: post.filename.clone(),
                 hash: post.hash.clone(),
                 sdate: post.sdate.clone(),
@@ -355,10 +358,15 @@ pub mod libkhata {
         let result = hasher.result();
         let hashs = hex::encode(&result[..]);
 
+        // Find excerpt <!-- excerpt -->
+        let excerpt_index = html_output.find("<!-- excerpt -->").unwrap_or(0);
+        let excerpt: String = html_output.drain(..excerpt_index).collect();
+
         let post = Post {
             title,
             slug: slug.clone(),
             body: html_output,
+            excerpt,
             filename,
             hash: hashs,
             date: dt,
@@ -607,6 +615,7 @@ pub mod libkhata {
             title: post.title.clone(),
             slug: post.slug.clone(),
             body: post.body.clone(),
+            excerpt: post.excerpt.clone(),
             filename: post.filename.clone(),
             hash: post.hash.clone(),
             sdate: post.sdate.clone(),
