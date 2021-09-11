@@ -3,7 +3,6 @@
 //! This is the internal library for the static blogging tool.
 //!
 //!
-#[macro_use]
 extern crate tera;
 
 pub mod utils {
@@ -101,7 +100,7 @@ pub mod utils {
         let local: DateTime<Local> = Local::now();
         let now = local.format("%Y-%m-%dT%H:%M:%S%:z").to_string();
         // Now, let us work on the tempalte
-        let tera = compile_templates!("templates/**/*");
+        let tera = tera::Tera::new("templates/**/*").unwrap();
         let mut ctx = Context::new();
 
         ctx.insert("title", &inp);
@@ -327,7 +326,7 @@ pub mod libkhata {
                         _link_type, dest, title,
                     ))
                 }
-            },
+            }
             pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(_link_type, dest, title)) => {
                 // If the link has a relative path, convert into absolute URL.
                 if dest.starts_with("/") {
@@ -340,11 +339,9 @@ pub mod libkhata {
                         title,
                     ))
                 } else {
-                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(
-                        _link_type, dest, title,
-                    ))
+                    pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(_link_type, dest, title))
                 }
-            },
+            }
             _ => event,
         });
 
@@ -435,7 +432,7 @@ pub mod libkhata {
         let posts_in_each_index = 10;
         let mut prev: i32;
         let mut next: i32;
-        let mut index:i32 = 1;
+        let mut index: i32 = 1;
         let mut index_page_flag = false;
         let mut num = 0;
         // length of the full list
@@ -654,7 +651,7 @@ pub mod libkhata {
         create_fdb();
         let mut fdb = get_fdb();
         let post_files = ls("./posts/".to_string());
-        let tera = compile_templates!("templates/**/*");
+        let tera = tera::Tera::new("templates/**/*").unwrap();
 
         for filename in post_files {
             if &filename.ends_with(".md") != &true {
@@ -782,7 +779,7 @@ pub mod libkhata {
     // Build the RSS feeds.
     // Use the time from the post normally
     // Use updated time only when it is a rebuild of the whole site
-    fn build_feeds(lps: Vec<Post>, name: &str, conf: &Configuration, rebuild: bool) {
+    fn build_feeds(lps: Vec<Post>, name: &str, conf: &Configuration, _rebuild: bool) {
         let filename = if name == "cmain" {
             "./output/rss.xml".to_string()
         } else {
