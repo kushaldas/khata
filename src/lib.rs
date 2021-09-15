@@ -28,11 +28,9 @@ pub mod utils {
             Err(why) => panic!("Error in creating {:?} {}", path, why),
             Ok(file) => file,
         };
-
-        match file.write_all(content.as_bytes()) {
-            Err(why) => panic!("Failed to write to {:?} : {}", path, why),
-            Ok(_) => (),
-        };
+        if let Err(why) = file.write_all(content.as_bytes()) {
+            panic!("Failed to write to {:?} : {}", path, why)
+        }
     }
 
     /// Saves all the RSS files, for feeds.
@@ -43,21 +41,14 @@ pub mod utils {
             Ok(file) => file,
         };
 
-        match file.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>"#) {
-            Err(_) => (),
-            Ok(_) => (),
-        };
+        file.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>"#)
+            .unwrap();
 
-        // Write the `LOREM_IPSUM` string to `file`, returns `io::Result<()>`
-        match file.write_all(content.as_bytes()) {
-            Err(why) => panic!("Failed to write to file: {}", why),
-            Ok(_) => (),
-        };
+        if let Err(why) = file.write_all(content.as_bytes()) {
+            panic!("Failed to write to file: {}", why)
+        }
 
-        match file.write_all(b"\n") {
-            Err(_) => (),
-            Ok(_) => (),
-        };
+        file.write_all(b"\n").unwrap();
     }
 
     /// To read any given file as String
@@ -87,22 +78,23 @@ pub mod utils {
     }
 
     /// Creates the SLUG which then can be used for the HTML file name.
-    pub fn create_slug(input: String) -> String {
+    pub fn create_slug(input: &str) -> String {
         let re = Regex::new(r"[[:alnum:]]+").unwrap();
         let mut output = String::new();
-        for cap in re.captures_iter(&input) {
+        for cap in re.captures_iter(input) {
             let data = &cap[0];
             output.push_str(data);
-            output.push_str("-");
+            output.push('-');
         }
-        let yet_to_be_small = output.trim_end_matches("-");
-        return yet_to_be_small.to_lowercase();
+        let yet_to_be_small = output.trim_end_matches('-');
+        yet_to_be_small.to_lowercase()
     }
 
+    /// Creates a default post template
     pub fn create_new_post() {
         println!("Enter the title of the post:");
         let inp = get_input();
-        let slug = create_slug(inp.clone());
+        let slug = create_slug(&inp);
         let local: DateTime<Local> = Local::now();
         let now = local.format("%Y-%m-%dT%H:%M:%S%:z").to_string();
         // Now, let us work on the tempalte
@@ -117,18 +109,19 @@ pub mod utils {
             .render("newpost.md", &ctx)
             .expect("Failed to render template");
         let filename = format!("./posts/{}.md", slug);
-        save_file(filename.clone(), content);
-        println!("Created new post: {}", filename);
+        println!("Creating new post at : {}", filename);
+        save_file(filename, content);
     }
+
+    /// Finds all the files inside of a directory
     pub fn ls(dirname: String) -> Vec<String> {
         let mut names: Vec<String> = vec![];
         for entry in fs::read_dir(dirname).unwrap() {
             let value = entry.unwrap();
             let finalpath = value.path();
             let finalname = finalpath.to_str();
-            match finalname {
-                Some(name) => names.push(name.to_string()),
-                None => (),
+            if let Some(name) = finalname {
+                names.push(name.to_string())
             }
         }
         names
@@ -233,7 +226,7 @@ pub mod libkhata {
                 hash: post.hash.clone(),
                 sdate: post.sdate.clone(),
                 tags: post.tags.clone(),
-                changed: post.changed.clone(),
+                changed: post.changed,
                 author: post.author.clone(),
                 url: post.url.clone(),
                 conf: post.conf,
@@ -255,7 +248,7 @@ pub mod libkhata {
     pub fn read_post(filename: String, conf: &Configuration) -> Post {
         let content = read_file(filename.clone());
         let tmp_content = content.clone();
-        let lines: Vec<&str> = tmp_content.split("\n").collect();
+        let lines: Vec<&str> = tmp_content.split('\n').collect();
 
         let mut title: String = String::from("");
         let mut author: String = String::from("");
@@ -286,25 +279,25 @@ pub mod libkhata {
                 let l = &line[9..];
                 let trimmed_line = l.trim();
                 tagline = String::from(trimmed_line);
-                if tagline == "" {
+                if tagline.is_empty() {
                     tagline = "Uncategorized".to_string();
                 }
             }
         }
         // Find the actual author for the post
         // This can be per post or from the configuration file
-        if temp_author == String::from("") {
+        if temp_author.is_empty() {
             author = conf.author.clone();
         }
 
-        let tags_temp: Vec<&str> = tagline.split(",").collect();
+        let tags_temp: Vec<&str> = tagline.split(',').collect();
         for word in tags_temp {
             let trimmped_word = word.trim();
             let temp_word = trimmped_word.to_string();
 
-            let slug = create_slug(temp_word.clone());
+            let slug = create_slug(trimmped_word);
             // No empty tags
-            if slug == "" {
+            if slug.is_empty() {
                 continue;
             }
 
@@ -318,7 +311,7 @@ pub mod libkhata {
         let parser = Parser::new_ext(&content, options).map(|event| match event {
             pulldown_cmark::Event::Start(pulldown_cmark::Tag::Image(_link_type, dest, title)) => {
                 // If the image has a relative path, convert into absolute URL.
-                if dest.starts_with("/") {
+                if dest.starts_with('/') {
                     let mut chars = dest.chars();
                     chars.next();
                     let news = format!("{}{}", conf.url, chars.as_str());
@@ -335,7 +328,7 @@ pub mod libkhata {
             }
             pulldown_cmark::Event::Start(pulldown_cmark::Tag::Link(_link_type, dest, title)) => {
                 // If the link has a relative path, convert into absolute URL.
-                if dest.starts_with("/") {
+                if dest.starts_with('/') {
                     let mut chars = dest.chars();
                     chars.next();
                     let news = format!("{}{}", conf.url, chars.as_str());
@@ -383,10 +376,11 @@ pub mod libkhata {
         post
     }
 
+    /// Creates the default hash store as a JSON file
     fn create_fdb() {
         let filename = ".scrrdkdss.json";
         let path = Path::new(&filename);
-        if path.exists() == false {
+        if !path.exists() {
             let mut map: HashMap<String, String> = HashMap::new();
             map.insert("file".to_string(), "filehash".to_string());
             let result = json!(map);
@@ -394,6 +388,7 @@ pub mod libkhata {
         }
     }
 
+    /// Reads the hash cache from the JSON file
     fn get_fdb() -> HashMap<String, String> {
         let filename = ".scrrdkdss.json";
         let content = read_file(filename.to_string());
@@ -401,18 +396,21 @@ pub mod libkhata {
         result
     }
 
+    /// Saves the whole hash cache into JSON file.
     fn save_fdb(map: HashMap<String, String>) {
         let filename = ".scrrdkdss.json";
         let result = json!(map);
         save_file(filename.to_string(), result.to_string());
     }
 
+    /// Reads the blog Configuration from `conf.json`.
     pub fn get_conf() -> Configuration {
         let json_str = read_file("conf.json".to_string());
         let conf: Configuration = serde_json::from_str(&json_str).unwrap();
         conf
     }
 
+    /// Creates the index categories for all indexes.
     fn build_categories(tera: &Tera, catpage: Catpage) {
         let mut context = Context::new();
         context.insert("catpage", &catpage);
@@ -442,27 +440,27 @@ pub mod libkhata {
         let mut index_page_flag = false;
         let mut num = 0;
         // length of the full list
-        let length = (lps.len() as i32).into();
+        let length = lps.len() as i32;
         // We start from the oldest post
         // That is why we are sorting here.
         lps.sort_by_key(|v| v.date);
         let mut sort_index: Vec<Post> = Vec::new();
 
         for post in lps {
-            if post.changed == true {
+            if post.changed {
                 index_page_flag = true;
             }
             sort_index.push(post.clone());
-            num = num + 1;
+            num += 1;
 
             // For each 10 posts, we create a new index page
             if num == posts_in_each_index {
-                if check_index(String::from(indexname), index) == false {
+                if !check_index(String::from(indexname), index) {
                     index_page_flag = true;
                 }
 
                 // Only changed indexes will get rebuild
-                if index_page_flag == true {
+                if index_page_flag {
                     index_page_flag = false;
                     sort_index.sort_by_key(|v| Reverse(v.date));
                     //let lps: Vec<SerialPost> =
@@ -495,7 +493,7 @@ pub mod libkhata {
                 num = 0;
             }
         }
-        if sort_index.len() > 0 {
+        if !sort_index.is_empty() {
             sort_index.sort_by_key(|v| Reverse(v.date));
             let lps: Vec<SerialPost> = sort_index.iter().map(|p| SerialPost::new(p)).collect();
             build_index(tera, lps, 0, index - 1, -1, indexname, sort_index[0].conf);
@@ -511,8 +509,6 @@ pub mod libkhata {
         indexname: &str,
         conf: &Configuration,
     ) {
-        let result: String;
-        let filename: String;
         let mut context = Context::new();
         context.insert("posts", &pss);
         context.insert("slug", indexname);
@@ -595,8 +591,8 @@ pub mod libkhata {
             posts.sort_by_key(|v| Reverse(v.date));
             let lps: Vec<SerialPost> = posts.iter().map(|p| SerialPost::new(p)).collect();
             let a = Archiveyear {
-                year: String::from(key),
-                posts: lps.clone(),
+                year: key,
+                posts: lps,
             };
             years.push(a);
         }
@@ -701,7 +697,7 @@ pub mod libkhata {
                 fdb.insert(post.filename.clone(), post.hash.clone());
 
                 // The following tags need rebuild
-                for (key, _value) in &post.tags {
+                for key in post.tags.keys() {
                     cat_needs_build.insert(String::from(key), true);
                 }
             }
@@ -754,7 +750,7 @@ pub mod libkhata {
         build_categories(&tera, catpage);
 
         // Now rebuild the category pages as required
-        for (key, _) in &cat_needs_build {
+        for key in cat_needs_build.keys() {
             let final_lps: Vec<Post>;
             let localposts = catslinks.get(key).unwrap();
             let mut lps = localposts.clone();
@@ -769,7 +765,7 @@ pub mod libkhata {
                 final_lps = lps;
             }
             // Now build the feed for that tag
-            build_feeds(final_lps, &key, &conf, rebuildall);
+            build_feeds(final_lps, key, &conf, rebuildall);
         }
 
         create_archive(&tera, pageyears.clone(), &conf);
@@ -812,30 +808,16 @@ pub mod libkhata {
             let mut guid = rss::Guid::default();
             guid.set_value(post.url.clone());
 
-            if post.changed {
-                let item = rss::ItemBuilder::default()
-                    .title(post.title.clone())
-                    .link(post.url.clone())
-                    .guid(Some(guid))
-                    .pub_date(format!("{}", date))
-                    .description(post.body.clone())
-                    .build();
-                match item {
-                    Ok(i) => items.push(i),
-                    Err(msg) => println!("{}", msg),
-                }
-            } else {
-                let item = rss::ItemBuilder::default()
-                    .title(post.title.clone())
-                    .link(post.url.clone())
-                    .guid(Some(guid))
-                    .pub_date(format!("{}", date))
-                    .description(post.body.clone())
-                    .build();
-                match item {
-                    Ok(i) => items.push(i),
-                    Err(msg) => println!("{}", msg),
-                }
+            let item = rss::ItemBuilder::default()
+                .title(post.title.clone())
+                .link(post.url.clone())
+                .guid(Some(guid))
+                .pub_date(format!("{}", date))
+                .description(post.body.clone())
+                .build();
+            match item {
+                Ok(i) => items.push(i),
+                Err(msg) => println!("{}", msg),
             }
         }
 
