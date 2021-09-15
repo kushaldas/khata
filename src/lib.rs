@@ -20,6 +20,8 @@ pub mod utils {
     use std::process::Command;
     use tera::Context;
 
+    /// Saves the given file.
+    /// Used in saving all generated HTML content.
     pub fn save_file(name: String, content: String) {
         let path = Path::new(&name);
         let mut file = match File::create(&path) {
@@ -33,6 +35,7 @@ pub mod utils {
         };
     }
 
+    /// Saves all the RSS files, for feeds.
     pub fn save_rss(name: String, content: String) {
         let path = Path::new(&name);
         let mut file = match File::create(&path) {
@@ -57,6 +60,7 @@ pub mod utils {
         };
     }
 
+    /// To read any given file as String
     pub fn read_file(name: String) -> String {
         let path = Path::new(&name);
         let mut file = match File::open(&path) {
@@ -68,6 +72,7 @@ pub mod utils {
         contents
     }
 
+    /// Takes the post title as input from the user
     pub fn get_input() -> String {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -81,6 +86,7 @@ pub mod utils {
         "".to_string()
     }
 
+    /// Creates the SLUG which then can be used for the HTML file name.
     pub fn create_slug(input: String) -> String {
         let re = Regex::new(r"[[:alnum:]]+").unwrap();
         let mut output = String::new();
@@ -464,7 +470,7 @@ pub mod libkhata {
                     if index == 1 {
                         prev = 0;
                     } else {
-                        prev = (index - 1) as i32;
+                        prev = index - 1;
                     }
 
                     // I don't remmeber the logic here.
@@ -472,7 +478,7 @@ pub mod libkhata {
                     if (index * posts_in_each_index) < length
                         && (length - index * posts_in_each_index) > posts_in_each_index
                     {
-                        next = ((index + 1) as i32).into();
+                        next = index + 1;
                     } else if (index * posts_in_each_index) == length {
                         next = -1;
                     } else {
@@ -485,7 +491,7 @@ pub mod libkhata {
                 }
 
                 sort_index = Vec::new();
-                index = index + 1;
+                index += 1;
                 num = 0;
             }
         }
@@ -538,25 +544,36 @@ pub mod libkhata {
             context.insert("Main", &false);
         }
 
-        if indexname == "index" {
-            result = tera.render("index.html", &context).unwrap();
-        } else {
-            result = tera.render("cat-index.html", &context).unwrap();
-        }
+        // if indexname == "index" {
+        //     result = tera.render("index.html", &context).unwrap();
+        // } else {
+        //     result = tera.render("cat-index.html", &context).unwrap();
+        // }
 
-        if next == -1 {
-            if indexname == "index" {
-                filename = format!("./output/{}.html", indexname);
-            } else {
-                filename = format!("./output/categories/{}.html", indexname);
-            }
-        } else {
-            if indexname == "index" {
-                filename = format!("./output/{}-{}.html", indexname, index);
-            } else {
-                filename = format!("./output/categories/{}-{}.html", indexname, index);
-            }
-        }
+        let result = match indexname {
+            "index" => tera.render("index.html", &context).unwrap(),
+            _ => tera.render("cat-index.html", &context).unwrap(),
+        };
+
+        // if next == -1 {
+        //     if indexname == "index" {
+        //         filename = format!("./output/{}.html", indexname);
+        //     } else {
+        //         filename = format!("./output/categories/{}.html", indexname);
+        //     }
+        // } else {
+        //     if indexname == "index" {
+        //         filename = format!("./output/{}-{}.html", indexname, index);
+        //     } else {
+        //         filename = format!("./output/categories/{}-{}.html", indexname, index);
+        //     }
+        // }
+        let filename = match (next, indexname) {
+            (-1, "index") => format!("./output/{}.html", indexname),
+            (-1, _) => format!("./output/categories/{}.html", indexname),
+            (_, "index") => format!("./output/{}-{}.html", indexname, index),
+            (_, _) => format!("./output/categories/{}-{}.html", indexname, index),
+        };
         save_file(filename, result);
     }
 
@@ -654,7 +671,7 @@ pub mod libkhata {
         let tera = tera::Tera::new("templates/**/*").unwrap();
 
         for filename in post_files {
-            if &filename.ends_with(".md") != &true {
+            if !filename.ends_with(".md") {
                 continue;
             }
             let mut post = read_post(filename.clone(), &conf);
@@ -674,7 +691,7 @@ pub mod libkhata {
             };
 
             // TODO: check for hashes here.
-            if rebuildall == true || post.hash != hash {
+            if rebuildall || post.hash != hash {
                 println!("Building post: {}", filename);
                 build_post(&tera, &post, "post".to_string());
                 rebuild_index = true;
@@ -710,7 +727,7 @@ pub mod libkhata {
         let page_files = ls("./pages/".to_string());
 
         for filename in page_files {
-            if &filename.ends_with(".md") != &true {
+            if !filename.ends_with(".md") {
                 continue;
             }
             let post = read_post(filename.clone(), &conf);
@@ -718,7 +735,7 @@ pub mod libkhata {
                 Some(val) => val.clone(),
                 None => "".to_string(),
             };
-            if rebuildall == true || post.hash != hash {
+            if rebuildall || post.hash != hash {
                 println!("Building page: {}", filename);
                 build_post(&tera, &post, "page".to_string());
 
@@ -758,7 +775,7 @@ pub mod libkhata {
         create_archive(&tera, pageyears.clone(), &conf);
 
         create_index_files(&tera, ps.clone(), "index");
-        if rebuild_index == true {
+        if rebuild_index {
             // Time to check for any change in 10 posts at max and rebuild rss feed if required.
 
             let mut lps = ps.clone();
@@ -795,7 +812,7 @@ pub mod libkhata {
             let mut guid = rss::Guid::default();
             guid.set_value(post.url.clone());
 
-            if post.changed == true {
+            if post.changed {
                 let item = rss::ItemBuilder::default()
                     .title(post.title.clone())
                     .link(post.url.clone())
