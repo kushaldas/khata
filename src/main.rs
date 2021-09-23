@@ -1,6 +1,8 @@
 use clap::{crate_authors, crate_version, App, Arg};
 use khata::libkhata::rebuild;
 use khata::utils::create_new_post;
+use shadow_rs::shadow;
+shadow!(build);
 
 fn main() {
     let matches = App::new("khata")
@@ -21,7 +23,33 @@ fn main() {
                 .help("Rebuilds the whole site")
                 .takes_value(false),
         )
+        .arg(
+            Arg::with_name("exe")
+                .short("e")
+                .long("exe")
+                .help("Gives the detials of the khata executable itself.")
+                .takes_value(false),
+        )
         .get_matches();
+
+    if matches.is_present("exe") {
+        println!("Debug build:{}", shadow_rs::is_debug());
+        println!("git_clean: {}", shadow_rs::git_clean());
+
+        println!("Branch: {}", build::BRANCH);
+        println!("Short commit: {}", build::SHORT_COMMIT);
+        println!("Commit HASH: {}", build::COMMIT_HASH);
+        println!("Commit date: {}", build::COMMIT_DATE);
+        println!("Commit author: {}", build::COMMIT_AUTHOR);
+        println!("Commit email: {}", build::COMMIT_EMAIL);
+
+        println!("Rust Version: {}", build::RUST_VERSION);
+        println!("Rust channel: {}", build::RUST_CHANNEL);
+        println!("Cargo version: {}", build::CARGO_VERSION);
+
+        println!("Build time: {}", build::BUILD_TIME);
+        return;
+    }
     if matches.is_present("new") {
         create_new_post();
         return;

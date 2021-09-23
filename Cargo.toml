@@ -18,8 +18,11 @@ pulldown-cmark = "0.8.0"
 sha2 = "0.8.0"
 hex = "0.4.3"
 rss = "1.10.0"
+shadow-rs = "0.7"
 
 [dependencies.chrono]
 version = "0.4"
 features = ["rustc-serialize"]
 
+[build-dependencies]
+shadow-rs = "0.7"
