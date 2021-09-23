@@ -1,10 +1,6 @@
-extern crate chrono;
-extern crate clap;
-extern crate khata;
-
 use clap::{crate_authors, crate_version, App, Arg};
 use khata::libkhata::rebuild;
-use khata::utils::*;
+use khata::utils::create_new_post;
 
 fn main() {
     let matches = App::new("khata")
@@ -36,6 +32,4 @@ fn main() {
     } else {
         rebuild(false, false);
     }
-
-
 }
