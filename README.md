@@ -65,3 +65,10 @@ To rebuild the whole site.
 To view all the help options.
 
 We have default templates and assets in the git repo.
+### To view which binary you are using
+
+```bash
+./khata -e
+```
+
+
