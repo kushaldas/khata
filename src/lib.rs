@@ -41,9 +41,6 @@ pub mod utils {
             Ok(file) => file,
         };
 
-        file.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>"#)
-            .unwrap();
-
         if let Err(why) = file.write_all(content.as_bytes()) {
             panic!("Failed to write to file: {}", why)
         }
@@ -815,10 +812,7 @@ pub mod libkhata {
                 .pub_date(format!("{}", date))
                 .description(post.body.clone())
                 .build();
-            match item {
-                Ok(i) => items.push(i),
-                Err(msg) => println!("{}", msg),
-            }
+            items.push(item);
         }
 
         let channel = rss::ChannelBuilder::default()
@@ -827,11 +821,6 @@ pub mod libkhata {
             .description(conf.title.clone())
             .items(items)
             .build();
-        match channel {
-            Ok(right) => {
-                save_rss(filename, right.to_string());
-            }
-            Err(msg) => println!("{}", msg),
-        }
+        save_rss(filename, channel.to_string());
     }
 }

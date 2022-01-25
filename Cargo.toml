@@ -1,6 +1,6 @@
 [package]
 name = "khata"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Kushal Das <mail@kushaldas.in>"]
 description = "Static blogging tool, Shonku reimplemented."
 license = "GPL-3.0-or-later"
@@ -17,7 +17,7 @@ serde = { version = "1.0", features = ["derive"] }
 pulldown-cmark = "0.8.0"
 sha2 = "0.8.0"
 hex = "0.4.3"
-rss = "1.10.0"
+rss = "2.0"
 shadow-rs = "0.7"
 
 [dependencies.chrono]
