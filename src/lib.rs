@@ -352,8 +352,11 @@ pub mod libkhata {
         let hashs = hex::encode(&result[..]);
 
         // Find excerpt <!-- excerpt -->
-        let excerpt_index = html_output.find("<!-- excerpt -->").unwrap_or(0);
-        let excerpt: String = html_output.drain(..excerpt_index).collect();
+        let html_output_vec: Vec<&str> = html_output.split("<!-- excerpt -->").collect();
+        let mut excerpt = String::new();
+        if html_output_vec.len() > 1 {
+            excerpt = html_output_vec[0].to_string();
+        }
 
         let post = Post {
             title,
