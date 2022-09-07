@@ -54,6 +54,7 @@ fn main() {
         println!("Cargo version: {}", build::CARGO_VERSION);
 
         println!("Build time: {}", build::BUILD_TIME);
+        return;
     }
     if matches.is_present("new") {
         create_new_post();
