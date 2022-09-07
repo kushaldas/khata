@@ -5,10 +5,17 @@ This is the Rust implementation of
 
 This is the very early stage.
 
-## To build from the source
+## To build from the source for normal systems
 
 ```bash
-cargo build --release
+cargo build --features shadow --release
+```
+
+The `shadow` feature will enable `-e/--exe` to get details about the executable.
+But, in case you want to run it under [WASI](https://wasi.dev/), then build it using the following command.
+
+```bash
+cargo build --target wasm32-wasi --release
 ```
 
 ## How to use?
@@ -65,7 +72,8 @@ To rebuild the whole site.
 To view all the help options.
 
 We have default templates and assets in the git repo.
-### To view which binary you are using
+
+### To view which binary you are using (when you enable shadow feature)
 
 ```bash
 ./khata -e
