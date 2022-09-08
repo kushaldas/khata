@@ -17,7 +17,6 @@ pub mod utils {
     use std::io;
     use std::io::prelude::*;
     use std::path::Path;
-    use std::process::Command;
     use tera::Context;
 
     /// Saves the given file.
@@ -123,17 +122,6 @@ pub mod utils {
         }
         names
     }
-
-    // Syncs any new blog post source
-    pub fn sync_posts() {
-        let _output = Command::new("/usr/bin/rsync")
-            .arg("-avz")
-            .arg("./posts/")
-            .arg("./output/posts/")
-            .output()
-            .unwrap();
-        //println!("{:#?}", output);
-    }
 }
 
 pub mod libkhata {
@@ -155,6 +143,7 @@ pub mod libkhata {
     use std::cmp::Reverse;
     use std::collections::HashMap;
     use std::path::Path;
+    use std::path::PathBuf;
     use std::str;
     use tera::{Context, Tera};
 
@@ -240,6 +229,19 @@ pub mod libkhata {
     pub struct Catpage<'a> {
         cats: HashMap<String, String>,
         conf: &'a Configuration,
+    }
+
+    // Syncs any new blog post source
+    pub fn sync_posts(lps: Vec<Post>) {
+        for ps in lps {
+            if ps.changed {
+                let p = std::path::Path::new(&ps.filename);
+                let mut newpath = PathBuf::new();
+                newpath.push("./output");
+                newpath.push(p);
+                std::fs::copy(p, newpath).unwrap();
+            }
+        }
     }
 
     pub fn read_post(filename: String, conf: &Configuration) -> Post {
@@ -786,7 +788,7 @@ pub mod libkhata {
         }
 
         // Now sync the .md files
-        sync_posts();
+        sync_posts(ps);
     }
 
     // Build the RSS feeds.
